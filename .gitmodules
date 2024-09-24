@@ -1,2 +1,4 @@
 [submodule "NFTSwap"]
 	url = https://github.com/hothahaha/tintinland-task-NFTSwap.git
+[submodule "weth"]
+	url = https://github.com/hothahaha/tintinland-task-weth.git
