@@ -15,12 +15,12 @@ contract BallotTest is Test {
     bytes32[] public proposalNames;
 
     // 定义常量
-    uint256 private constant VOTING_DURATION = 60 minutes;
-    uint256 private constant WEIGHT_SETTING_DURATION = 30 minutes;
-    uint256 private constant PROPOSAL_COUNT = 3;
-    uint256 private constant DEFAULT_WEIGHT = 1;
-    uint256 private constant CUSTOM_WEIGHT = 2;
-    uint256 private constant HIGH_WEIGHT = 3;
+    uint256 private constant VOTING_DURATION = 60 minutes; // 投票持续时间
+    uint256 private constant WEIGHT_SETTING_DURATION = 30 minutes; // 权重设置持续时间
+    uint256 private constant PROPOSAL_COUNT = 3; // 提案数量
+    uint256 private constant DEFAULT_WEIGHT = 1; // 默认投票权重
+    uint256 private constant CUSTOM_WEIGHT = 2; // 自定义投票权重
+    uint256 private constant HIGH_WEIGHT = 3; // 高投票权重
 
     function setUp() public {
         chairperson = address(this);
@@ -40,7 +40,7 @@ contract BallotTest is Test {
         );
     }
 
-    // 测试初始状态
+    // 测试初始状态是否正确设置
     function testInitialState() public view {
         assertEq(ballot.chairperson(), chairperson);
         assertEq(ballot.startTime(), block.timestamp);
@@ -51,7 +51,7 @@ contract BallotTest is Test {
         );
     }
 
-    // 测试授予投票权
+    // 测试给予投票权功能
     function testGiveRightToVote() public {
         ballot.giveRightToVote(voter1);
         (uint256 weight, bool voted, address delegate, uint256 vote) = ballot
@@ -62,21 +62,21 @@ contract BallotTest is Test {
         assertEq(vote, 0);
     }
 
-    // 测试只有主席可以授予投票权
+    // 测试只有主席可以给予投票权
     function testOnlyChairpersonCanGiveRightToVote() public {
         vm.prank(voter1);
         vm.expectRevert(Ballot.Ballot__OnlyChairperson.selector);
         ballot.giveRightToVote(voter2);
     }
 
-    // 测试设置选民权重
+    // 测试设置选民权重功能
     function testSetVoterWeight() public {
         ballot.setVoterWeight(voter1, CUSTOM_WEIGHT);
         (uint256 weight, , , ) = ballot.voters(voter1);
         assertEq(weight, CUSTOM_WEIGHT);
     }
 
-    // 测试不能在截日期后设置权重
+    // 测试在截止日期后不能设置权重
     function testCannotSetWeightAfterDeadline() public {
         vm.warp(block.timestamp + WEIGHT_SETTING_DURATION + 1 minutes);
         vm.expectRevert(Ballot.Ballot__WeightSettingEnded.selector);
@@ -100,7 +100,7 @@ contract BallotTest is Test {
         ballot.setVoterWeight(voter1, CUSTOM_WEIGHT);
     }
 
-    // 测试委托投票
+    // 测试委托投票功能
     function testDelegate() public {
         ballot.giveRightToVote(voter1);
         ballot.giveRightToVote(voter2);
@@ -150,7 +150,7 @@ contract BallotTest is Test {
         ballot.delegate(voter2);
     }
 
-    // 测试投票
+    // 测试投票功能
     function testVote() public {
         ballot.giveRightToVote(voter1);
 
@@ -166,7 +166,7 @@ contract BallotTest is Test {
         assertEq(voteCount, 1);
     }
 
-    // 测试不能在开始前投票
+    // 测试在投票开始前不能投票
     function testCannotVoteBeforeStart() public {
         ballot.giveRightToVote(voter1);
 
@@ -176,7 +176,7 @@ contract BallotTest is Test {
         ballot.vote(0);
     }
 
-    // 测试不能在结束后投票
+    // 测试在投票结束后不能投票
     function testCannotVoteAfterEnd() public {
         ballot.giveRightToVote(voter1);
 
@@ -198,14 +198,14 @@ contract BallotTest is Test {
         ballot.vote(1);
     }
 
-    // 测试没有投票权不能投票
+    // 测试没有投票权的人不能投票
     function testCannotVoteWithoutRights() public {
         vm.prank(voter1);
         vm.expectRevert(Ballot.Ballot__NoVotingRights.selector);
         ballot.vote(0);
     }
 
-    // 测试获胜提案
+    // 测试获胜提案计算
     function testWinningProposal() public {
         ballot.giveRightToVote(voter1);
         ballot.giveRightToVote(voter2);
@@ -223,7 +223,7 @@ contract BallotTest is Test {
         assertEq(ballot.winningProposal(), 1);
     }
 
-    // 测试获胜提案名称
+    // 测试获取获胜提案名称
     function testWinnerName() public {
         ballot.giveRightToVote(voter1);
         ballot.giveRightToVote(voter2);
@@ -241,7 +241,7 @@ contract BallotTest is Test {
         assertEq(ballot.winnerName(), "Proposal 2");
     }
 
-    // 测试设置选民权重模糊测试
+    // 模糊测试：设置选民权重
     function testFuzzSetVoterWeight(address voter, uint256 weight) public {
         vm.assume(
             voter != address(0) && weight > 0 && weight < type(uint256).max
@@ -252,7 +252,7 @@ contract BallotTest is Test {
         assertEq(actualWeight, weight);
     }
 
-    // 测试投票模糊测试
+    // 模糊测试：投票
     function testFuzzVote(address voter, uint8 proposalIndex) public {
         vm.assume(voter != address(0) && proposalIndex < PROPOSAL_COUNT);
 
@@ -269,11 +269,17 @@ contract BallotTest is Test {
         assertEq(voteCount, weight);
     }
 
-    // 测试委托模糊测试
+    // 模糊测试：复杂的委托场景
     function testFuzzDelegate(address voter, address delegate) public {
         vm.assume(
             voter != address(0) && delegate != address(0) && voter != delegate
         );
+
+        // 确保voter和delegate都没有投票权
+        (uint256 voterWeight, , , ) = ballot.voters(voter);
+        (uint256 delegateWeight, , , ) = ballot.voters(delegate);
+        vm.assume(voterWeight == 0);
+        vm.assume(delegateWeight == 0);
 
         ballot.giveRightToVote(voter);
         ballot.giveRightToVote(delegate);
@@ -282,14 +288,14 @@ contract BallotTest is Test {
         ballot.delegate(delegate);
 
         (, bool voterVoted, address voterDelegate, ) = ballot.voters(voter);
-        (uint256 delegateWeight, , , ) = ballot.voters(delegate);
+        (delegateWeight, , , ) = ballot.voters(delegate);
 
         assertEq(voterVoted, true);
         assertEq(voterDelegate, delegate);
-        assertEq(delegateWeight, 2); // 假设默认权重为1
+        assertEq(delegateWeight, DEFAULT_WEIGHT + DEFAULT_WEIGHT);
     }
 
-    // 测试获胜提案模糊测试
+    // 模糊测试：多种投票情况下的获胜提案
     function testFuzzWinningProposal(uint256[] memory votes) public {
         vm.assume(votes.length == PROPOSAL_COUNT);
 
@@ -316,24 +322,16 @@ contract BallotTest is Test {
 
         // 检查实际获胜提案的票数是否等于最高票数
         (, uint256 winningVoteCount) = ballot.proposals(actualWinningProposal);
-        assertEq(
-            winningVoteCount,
-            maxVotes,
-            "Winning proposal does not have the maximum votes"
-        );
+        assertEq(winningVoteCount, maxVotes);
 
         // 检查实际获胜提案是否是有效的获胜提案之一
         (, uint256 expectedVoteCount) = ballot.proposals(
             expectedWinningProposal
         );
-        assertEq(
-            expectedVoteCount,
-            maxVotes,
-            "Expected winning proposal does not have the maximum votes"
-        );
+        assertEq(expectedVoteCount, maxVotes);
     }
 
-    // 测试获胜提案模糊测试
+    // 测试平局情况下的获胜提案
     function testTieBreaker() public {
         ballot.giveRightToVote(voter1);
         ballot.giveRightToVote(voter2);
@@ -347,10 +345,7 @@ contract BallotTest is Test {
         uint256 winningProposal = ballot.winningProposal();
         (, uint256 winningVotes) = ballot.proposals(winningProposal);
 
-        assertTrue(
-            winningProposal == 0 || winningProposal == 1,
-            "Winning proposal should be either 0 or 1"
-        );
-        assertEq(winningVotes, 1, "Winning proposal should have 1 vote");
+        assertTrue(winningProposal == 0 || winningProposal == 1);
+        assertEq(winningVotes, 1);
     }
 }

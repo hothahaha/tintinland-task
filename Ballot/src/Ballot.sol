@@ -18,9 +18,9 @@ contract Ballot {
     mapping(address => Voter) public voters;
     Proposal[] public proposals;
 
-    uint256 public startTime;
-    uint256 public endTime;
-    uint256 public weightSettingEndTime;
+    uint256 public startTime; // 投票开始时间
+    uint256 public endTime; // 投票结束时间
+    uint256 public weightSettingEndTime; // 权重设置结束时间
 
     error Ballot__OnlyChairperson();
     error Ballot__AlreadyVoted();
@@ -150,5 +150,19 @@ contract Ballot {
      */
     function winnerName() external view returns (bytes32 winnerName_) {
         winnerName_ = proposals[winningProposal()].name;
+    }
+
+    /*
+     * @dev 获取当前投票状态
+     * @return status 0: 未开始, 1: 进行中, 2: 已结束
+     */
+    function getVotingStatus() public view returns (uint8 status) {
+        if (block.timestamp < startTime) {
+            return 0; // 未开始
+        } else if (block.timestamp <= endTime) {
+            return 1; // 进行中
+        } else {
+            return 2; // 已结束
+        }
     }
 }
