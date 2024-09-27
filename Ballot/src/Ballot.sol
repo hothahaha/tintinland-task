@@ -33,6 +33,7 @@ contract Ballot {
     error Ballot__VotingEnded();
     error Ballot__WeightSettingEnded();
     error Ballot__InvalidWeight();
+    error Ballot__InvalidProposal();
 
     /*
      * @dev 构造函数，初始化投票系统
@@ -120,6 +121,7 @@ contract Ballot {
     function vote(uint256 proposal) external {
         if (block.timestamp < startTime) revert Ballot__VotingNotStarted();
         if (block.timestamp > endTime) revert Ballot__VotingEnded();
+        if (proposal >= proposals.length) revert Ballot__InvalidProposal(); // 添加这行
 
         Voter storage sender = voters[msg.sender];
         if (sender.weight == 0) revert Ballot__NoVotingRights();
