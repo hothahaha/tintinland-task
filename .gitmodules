@@ -4,3 +4,6 @@
 	url = https://github.com/hothahaha/tintinland-task-weth.git
 [submodule "amm"]
 	url = https://github.com/hothahaha/tintinland-task-amm.git
+[submodule "Ballot/lib/forge-std"]
+	path = Ballot/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
