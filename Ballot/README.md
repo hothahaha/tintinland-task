@@ -1,66 +1,27 @@
-## Foundry
+# 投票智能合约
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+本项目使用 Solidity 和 Foundry 实现了一个用于投票目的的智能合约。
 
-Foundry consists of:
+## 项目结构
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- `src/Ballot.sol`: 主要的投票智能合约
+- `test/BallotTest.sol`: 投票合约的测试文件
 
-## Documentation
+## 安装
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
+要安装项目依赖，请运行：
 
 ```shell
-$ forge build
+make install
 ```
 
-### Test
+## 测试
+
+运行测试：
 
 ```shell
-$ forge test
+make test
 ```
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+测试覆盖率：
+![alt text](image.png)
