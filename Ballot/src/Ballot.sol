@@ -14,13 +14,13 @@ contract Ballot {
         uint256 voteCount;
     }
 
-    address public chairperson;
+    address public immutable i_chairperson;
     mapping(address => Voter) public voters;
     Proposal[] public proposals;
 
-    uint256 public startTime; // 投票开始时间
-    uint256 public endTime; // 投票结束时间
-    uint256 public weightSettingEndTime; // 权重设置结束时间
+    uint256 public immutable i_startTime; // 投票开始时间
+    uint256 public immutable i_endTime; // 投票结束时间
+    uint256 public immutable i_weightSettingEndTime; // 权重设置结束时间
 
     error Ballot__OnlyChairperson();
     error Ballot__AlreadyVoted();
@@ -35,6 +35,10 @@ contract Ballot {
     error Ballot__InvalidWeight();
     error Ballot__InvalidProposal();
 
+    event VoterWeightSet(address indexed voter, uint256 weight);
+    event Voted(address indexed voter, uint256 proposalIndex);
+    event Delegated(address indexed from, address indexed to);
+
     /*
      * @dev 构造函数，初始化投票系统
      * @param proposalNames 提案名称数组
@@ -46,17 +50,17 @@ contract Ballot {
         uint256 _durationInMinutes,
         uint256 _weightSettingDurationInMinutes
     ) {
-        chairperson = msg.sender;
-        voters[chairperson].weight = 1;
+        i_chairperson = msg.sender;
+        voters[i_chairperson].weight = 1;
 
         for (uint256 i = 0; i < proposalNames.length; i++) {
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
         }
 
-        startTime = block.timestamp;
-        endTime = startTime + (_durationInMinutes * 1 minutes);
-        weightSettingEndTime =
-            startTime +
+        i_startTime = block.timestamp;
+        i_endTime = i_startTime + (_durationInMinutes * 1 minutes);
+        i_weightSettingEndTime =
+            i_startTime +
             (_weightSettingDurationInMinutes * 1 minutes);
     }
 
@@ -66,13 +70,14 @@ contract Ballot {
      * @param weight 要设置的权重
      */
     function setVoterWeight(address voter, uint256 weight) external {
-        if (msg.sender != chairperson) revert Ballot__OnlyChairperson();
-        if (block.timestamp > weightSettingEndTime)
+        if (msg.sender != i_chairperson) revert Ballot__OnlyChairperson();
+        if (block.timestamp > i_weightSettingEndTime)
             revert Ballot__WeightSettingEnded();
         if (weight == 0) revert Ballot__InvalidWeight();
         if (voters[voter].voted) revert Ballot__AlreadyVoted();
 
         voters[voter].weight = weight;
+        emit VoterWeightSet(voter, weight);
     }
 
     /*
@@ -80,7 +85,7 @@ contract Ballot {
      * @param voter 要授予投票权的地址
      */
     function giveRightToVote(address voter) external {
-        if (msg.sender != chairperson) revert Ballot__OnlyChairperson();
+        if (msg.sender != i_chairperson) revert Ballot__OnlyChairperson();
         if (voters[voter].voted) revert Ballot__AlreadyVoted();
         if (voters[voter].weight != 0) revert Ballot__HasVotingRights();
 
@@ -112,6 +117,7 @@ contract Ballot {
         } else {
             delegate_.weight += sender.weight;
         }
+        emit Delegated(msg.sender, to);
     }
 
     /*
@@ -119,8 +125,8 @@ contract Ballot {
      * @param proposal 要投票的提案索引
      */
     function vote(uint256 proposal) external {
-        if (block.timestamp < startTime) revert Ballot__VotingNotStarted();
-        if (block.timestamp > endTime) revert Ballot__VotingEnded();
+        if (block.timestamp < i_startTime) revert Ballot__VotingNotStarted();
+        if (block.timestamp > i_endTime) revert Ballot__VotingEnded();
         if (proposal >= proposals.length) revert Ballot__InvalidProposal(); // 添加这行
 
         Voter storage sender = voters[msg.sender];
@@ -130,6 +136,7 @@ contract Ballot {
         sender.voted = true;
         sender.vote = proposal;
         proposals[proposal].voteCount += sender.weight;
+        emit Voted(msg.sender, proposal);
     }
 
     /*
@@ -138,7 +145,8 @@ contract Ballot {
      */
     function winningProposal() public view returns (uint256 winningProposal_) {
         uint256 winningVoteCount = 0;
-        for (uint256 p = 0; p < proposals.length; p++) {
+        uint256 proposalsLength = proposals.length;
+        for (uint256 p = 0; p < proposalsLength; p++) {
             if (proposals[p].voteCount > winningVoteCount) {
                 winningVoteCount = proposals[p].voteCount;
                 winningProposal_ = p;
@@ -159,9 +167,9 @@ contract Ballot {
      * @return status 0: 未开始, 1: 进行中, 2: 已结束
      */
     function getVotingStatus() public view returns (uint8 status) {
-        if (block.timestamp < startTime) {
+        if (block.timestamp < i_startTime) {
             return 0; // 未开始
-        } else if (block.timestamp <= endTime) {
+        } else if (block.timestamp <= i_endTime) {
             return 1; // 进行中
         } else {
             return 2; // 已结束

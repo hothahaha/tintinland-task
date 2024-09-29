@@ -41,11 +41,11 @@ contract BallotTest is Test {
     }
 
     function testInitialState() public view {
-        assertEq(ballot.chairperson(), chairperson);
-        assertEq(ballot.startTime(), block.timestamp);
-        assertEq(ballot.endTime(), block.timestamp + VOTING_DURATION);
+        assertEq(ballot.i_chairperson(), chairperson);
+        assertEq(ballot.i_startTime(), block.timestamp);
+        assertEq(ballot.i_endTime(), block.timestamp + VOTING_DURATION);
         assertEq(
-            ballot.weightSettingEndTime(),
+            ballot.i_weightSettingEndTime(),
             block.timestamp + WEIGHT_SETTING_DURATION
         );
     }
@@ -208,15 +208,15 @@ contract BallotTest is Test {
         assertEq(ballot.getVotingStatus(), 1); // 刚开始应该是进行中
 
         // 测试未开始状态
-        vm.warp(ballot.startTime() - 1);
+        vm.warp(ballot.i_startTime() - 1);
         assertEq(ballot.getVotingStatus(), 0); // 未开始
 
         // 测试进行中状态
-        vm.warp(ballot.startTime() + 1 minutes);
+        vm.warp(ballot.i_startTime() + 1 minutes);
         assertEq(ballot.getVotingStatus(), 1); // 进行中
 
         // 测试已结束状态
-        vm.warp(ballot.endTime() + 1);
+        vm.warp(ballot.i_endTime() + 1);
         assertEq(ballot.getVotingStatus(), 2); // 已结束
     }
 
@@ -293,10 +293,10 @@ contract BallotTest is Test {
     // 测试在投票期间尝试设置权重
     function testSetWeightDuringVoting() public {
         // 移动时间到权重设置期结束后，但仍在投票期间
-        vm.warp(ballot.weightSettingEndTime() + 1);
+        vm.warp(ballot.i_weightSettingEndTime() + 1);
 
         // 确保我们仍在投票期间
-        require(block.timestamp <= ballot.endTime(), "Not in voting period");
+        require(block.timestamp <= ballot.i_endTime(), "Not in voting period");
 
         // 尝试设置权重，应该失败
         vm.expectRevert(Ballot.Ballot__WeightSettingEnded.selector);
@@ -331,7 +331,7 @@ contract BallotTest is Test {
     // 测试在投票结束后尝试投票
     function testVoteAfterVotingEnded() public {
         ballot.giveRightToVote(voter1);
-        vm.warp(ballot.endTime() + 1);
+        vm.warp(ballot.i_endTime() + 1);
 
         vm.prank(voter1);
         vm.expectRevert(Ballot.Ballot__VotingEnded.selector);
